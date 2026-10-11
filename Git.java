@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public class Git {
     public static void main(String[] args) throws IOException {
-        // Git.init();
+        Git.init();
         System.out.println(Git.hashFile("testFolder/test2.txt"));
         Git.createBlob("testFolder/test2.txt");
         Git.updateIndex("testFolder/test2.txt");
@@ -159,4 +159,57 @@ public class Git {
         String existingPath = line.substring(spaceInd + 1);
         return existingPath.equals(filePath);
     }
+
+    public static String createTree(ArrayList<String> workingList, String dirPath)
+            throws IOException {
+        StringBuilder treeContents = new StringBuilder();
+        boolean firstLine = true;
+
+        for (String line : workingList) {
+            String[] parts = line.split(" ", 3);
+
+            String type = parts[0];
+            String hash = parts[1];
+            String path = parts[2];
+
+            int lastSlash = path.lastIndexOf("/");
+
+            if (lastSlash != -1) {
+                String folder = path.substring(0, lastSlash);
+
+                if (folder.equals(dirPath)) {
+                    String name = path.substring(lastSlash + 1);
+
+                    if (!firstLine) {
+                        treeContents.append("\n");
+                    }
+
+                    treeContents.append(type + " " + hash + " " + name);
+                    firstLine = false;
+                }
+            }
+        }
+        String contents = treeContents.toString();
+
+        String hashed = hashFile(contents);
+
+        File treeFile = new File("git/objects", hashed);
+
+        try {
+            treeFile.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(treeFile))) {
+            writer.write(contents);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return hashed;
+    }
+
+    // unfortunately I am sick and have only been able to do 3.2
 }
+
