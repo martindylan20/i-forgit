@@ -3,16 +3,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Git {
     public static void main(String[] args) throws IOException {
         Git.init();
-        System.out.println(Git.hashFile("testFolder/test2.txt"));
+        // System.out.println(Git.hashFile("testFolder/test2.txt"));
         Git.createBlob("testFolder/test2.txt");
         Git.updateIndex("testFolder/test2.txt");
 
         Git.createBlob("test.txt");
         Git.updateIndex("test.txt");
+        treeIndex();
     }
 
     public static void init() {
@@ -41,7 +43,6 @@ public class Git {
 
     public static String hashFile(String filePath) throws IOException {
         StringBuilder stuffInFile = new StringBuilder();
-        StringBuilder hexString = new StringBuilder();
 
         // gets stuffInFile
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
@@ -53,9 +54,16 @@ public class Git {
         }
 
         // turn stuffInFile to bytes
+        
+        return hashString(stuffInFile.toString());
+
+    }
+
+    private static String hashString(String input) {
+        StringBuilder hexString = new StringBuilder();
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
-            byte[] bytes = md.digest(stuffInFile.toString().getBytes(StandardCharsets.UTF_8));
+            byte[] bytes = md.digest(input.toString().getBytes(StandardCharsets.UTF_8));
 
             // bytes to hash
             for (byte b : bytes) {
@@ -66,9 +74,7 @@ public class Git {
         } catch (NoSuchAlgorithmException e) {
             System.out.println("NoSuchAlgorithmException: file couldn't be hashed :(");
         }
-
-        return hexString.toString();
-
+        return null;
     }
 
     public static void createBlob(String filePath) throws IOException {
@@ -93,11 +99,12 @@ public class Git {
     public static void updateIndex(String filePath) throws IOException {
         String hashedFile = Git.hashFile(filePath);
         File index = new File("./git/index");
+        String root = new File("..").getAbsoluteFile().getParentFile().getName();
 
         // getting path of filePath
         Path path = Paths.get(filePath);
         String relativePath = path.toString();
-        String entry = hashedFile + " " + relativePath;
+        String entry =  hashedFile + " " + root + "/" + relativePath;
 
         // checking if needs newLine or index is empty
         ArrayList<String> lines = new ArrayList<>();
@@ -109,7 +116,7 @@ public class Git {
             // reading the existing index file (going line by line)
             while (line != null) {
                 // add same filePath, but with diff hash
-                if (samePath(line, relativePath)) {
+                if (samePath(line, root + "/" + relativePath)) {
                     lines.add(entry);
                     updated = true;
                 }
@@ -191,7 +198,7 @@ public class Git {
         }
         String contents = treeContents.toString();
 
-        String hashed = hashFile(contents);
+        String hashed = hashString(contents);
 
         File treeFile = new File("git/objects", hashed);
 
@@ -211,5 +218,51 @@ public class Git {
     }
 
     // unfortunately I am sick and have only been able to do 3.2
+    public static String treeIndex() {
+        try {
+            File indexFile = new File("./git/index"); 
+            StringBuilder fileString = new StringBuilder();
+            BufferedReader brFile = new BufferedReader(new FileReader(indexFile));
+            String line = "";
+            while ((line = brFile.readLine()) != null) {
+                fileString.append(line);
+                fileString.append('\n');
+            }
+            brFile.close();
+            ArrayList<String> indexArray = new ArrayList<>(Arrays.asList(fileString.substring(0,fileString.length()-1).split("\n")));
+            for (int i = 0; i < indexArray.size(); i++) {
+                indexArray.set(i, "blob " + indexArray.get(i));
+            }
+            // String index = "";
+            String deepPath = "/";
+            String root = new File("..").getAbsoluteFile().getParentFile().getName();
+            
+            while (!deepPath.equals(root) && deepPath.length()!=0) {
+                deepPath = "";
+                for (String string : indexArray) {
+                    if ((deepPath.length() - deepPath.replace("/", "").length()) < (string.length() - string.replace("/", "").length())) {
+                        deepPath = new File(string.substring(string.indexOf(' ', string.indexOf(' ') + 1) + 1)).getParent();
+                    }
+                }
+                ArrayList<Integer> remove = new ArrayList<>();
+                for (int i = 0; i < indexArray.size(); i++) {
+                    if (indexArray.get(i).contains(deepPath)) {
+                        remove.add(i);
+                    }
+                }
+                indexArray.add("tree " + createTree(indexArray, deepPath) + " " + deepPath);
+                for (int i = 0; i < remove.size(); i++) {
+                    indexArray.remove((int) remove.get(i)-i);
+                }
+            }
+            FileWriter fw = new FileWriter("./git/index");
+            fw.write(indexArray.get(0));
+            fw.close();
+            return createTree(indexArray, deepPath);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }
 
