@@ -2,19 +2,23 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.*;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class Git {
     public static void main(String[] args) throws IOException {
-        Git.init();
+        // Git.init();
         // System.out.println(Git.hashFile("testFolder/test2.txt"));
-        Git.createBlob("testFolder/test2.txt");
-        Git.updateIndex("testFolder/test2.txt");
+        // Git.createBlob("testFolder/test2.txt");
+        // Git.updateIndex("testFolder/test2.txt");
 
-        Git.createBlob("test.txt");
-        Git.updateIndex("test.txt");
-        treeIndex();
+        // Git.createBlob("test.txt");
+        // Git.updateIndex("test.txt");
+        // treeIndex();
+        printCommit(null, null);
     }
 
     public static void init() {
@@ -263,6 +267,16 @@ public class Git {
             e.printStackTrace();
             return null;
         }
+    }
+
+    public static void printCommit(String author, String message) {
+        String tree = "tree: " + treeIndex();
+        String parent = "";
+        if (condition) {
+            BufferedReader br = new BufferedReader(new FileReader("./git/HEAD"));
+            
+        }
+        String date = LocalDateTime.now().toString();
     }
 }
 
