@@ -7,18 +7,20 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HexFormat;
 
 public class Git {
     public static void main(String[] args) throws IOException {
         // Git.init();
-        // System.out.println(Git.hashFile("testFolder/test2.txt"));
-        // Git.createBlob("testFolder/test2.txt");
-        // Git.updateIndex("testFolder/test2.txt");
+        Git.createBlob("testFolder/test2.txt");
+        Git.updateIndex("testFolder/test2.txt");
 
         // Git.createBlob("test.txt");
         // Git.updateIndex("test.txt");
-        // treeIndex();
-        printCommit(null, null);
+
+        Git.createBlob("README.md");
+        Git.updateIndex("README.md");
+        printCommit("author", "message");
     }
 
     public static void init() {
@@ -221,7 +223,6 @@ public class Git {
         return hashed;
     }
 
-    // unfortunately I am sick and have only been able to do 3.2
     public static String treeIndex() {
         try {
             File indexFile = new File("./git/index"); 
@@ -259,10 +260,12 @@ public class Git {
                     indexArray.remove((int) remove.get(i)-i);
                 }
             }
-            FileWriter fw = new FileWriter("./git/index");
+            String rootHash = hashString(indexArray.get(0));
+            FileWriter fw = new FileWriter("./git/objects/" + rootHash);
             fw.write(indexArray.get(0));
             fw.close();
-            return createTree(indexArray, deepPath);
+            createTree(indexArray, deepPath);
+            return rootHash;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -270,13 +273,29 @@ public class Git {
     }
 
     public static void printCommit(String author, String message) {
-        String tree = "tree: " + treeIndex();
+        String tree = treeIndex();
         String parent = "";
-        if (condition) {
-            BufferedReader br = new BufferedReader(new FileReader("./git/HEAD"));
-            
-        }
         String date = LocalDateTime.now().toString();
+        StringBuilder print = new StringBuilder();
+        try (
+            BufferedReader br = new BufferedReader(new FileReader("./git/HEAD"));
+        ) {
+            parent = br.readLine();
+            print.append("tree: ").append(tree).append("\n");
+            if (parent != null) print.append("parent: ").append(parent).append("\n");
+            print.append("author: ").append(author).append("\n");
+            print.append("date: ").append(date).append("\n");
+            print.append("message: ").append(message);
+            String commitHash = hashString(print.toString());
+            BufferedWriter bw = new BufferedWriter(new FileWriter("./git/HEAD"));
+            bw.write(commitHash);
+            bw.close();
+            bw = new BufferedWriter(new FileWriter("./git/objects/" + commitHash));
+            bw.write(print.toString());
+            bw.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
 
