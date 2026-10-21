@@ -272,7 +272,7 @@ public class Git {
         }
     }
 
-    public static void printCommit(String author, String message) {
+    public static String printCommit(String author, String message) {
         String tree = treeIndex();
         String parent = "";
         String date = LocalDateTime.now().toString();
@@ -293,9 +293,11 @@ public class Git {
             bw = new BufferedWriter(new FileWriter("./git/objects/" + commitHash));
             bw.write(print.toString());
             bw.close();
+            return commitHash;
         } catch (Exception e) {
             e.printStackTrace();
         }
+        return null;
     }
 }
 
