@@ -12,15 +12,17 @@ import java.util.HexFormat;
 public class Git {
     public static void main(String[] args) throws IOException {
         // Git.init();
-        Git.createBlob("testFolder/test2.txt");
-        Git.updateIndex("testFolder/test2.txt");
+        // Git.createBlob("testFolder/test2.txt");
+        // Git.updateIndex("testFolder/test2.txt");
 
         // Git.createBlob("test.txt");
         // Git.updateIndex("test.txt");
 
-        Git.createBlob("README.md");
-        Git.updateIndex("README.md");
-        printCommit("author", "message");
+        // Git.createBlob("README.md");
+        // Git.updateIndex("README.md");
+        // printCommit("author", "message");
+        // System.out.println(indexRecursive("29b5a3711b7cd3cbb8de67aba227183c9542c21d", ""));
+        // rebuildIndex();
     }
 
     public static void init() {
@@ -298,6 +300,46 @@ public class Git {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String rebuildIndex() {
+        try {
+            BufferedReader headReader = new BufferedReader(new FileReader("./git/HEAD"));
+            String head = headReader.readLine();
+            headReader.close();
+
+            BufferedReader treeReader = new BufferedReader(new FileReader("./git/objects/" + head));
+            String tree = treeReader.readLine();
+            tree = tree.substring(tree.indexOf(' ') + 1);
+            treeReader.close();
+
+            BufferedWriter indexWriter = new BufferedWriter(new FileWriter("./git/index"));
+            indexWriter.write(indexRecursive(tree, ""));
+            indexWriter.close();
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String indexRecursive(String tree, String path) {
+        try {
+            BufferedReader file = new BufferedReader(new FileReader("./git/objects/" + tree));
+            StringBuilder index = new StringBuilder();
+            String line;
+            while ((line = file.readLine()) != null) {
+                if (line.startsWith("blob")) {
+                    System.out.println(line);
+                    index.append(line.substring(line.indexOf(' ')+1, line.lastIndexOf(' ')+1));
+                    index.append(path.substring(1)).append('/').append(line.substring(line.lastIndexOf(' ')+1)).append('\n');
+                } else {
+                    index.append(indexRecursive(line.substring(line.indexOf(' ')+1, line.lastIndexOf(' ')), path + "/" + line.substring(line.lastIndexOf(' ') +1)));
+                }
+            }
+            return index.toString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
 
