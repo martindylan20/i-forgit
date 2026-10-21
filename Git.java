@@ -23,6 +23,7 @@ public class Git {
         // printCommit("author", "message");
         // System.out.println(indexRecursive("29b5a3711b7cd3cbb8de67aba227183c9542c21d", ""));
         // rebuildIndex();
+        checkout(null);
     }
 
     public static void init() {
@@ -302,13 +303,13 @@ public class Git {
         return null;
     }
 
-    public static String rebuildIndex() {
+    public static String rebuildIndex(String commit) {
         try {
-            BufferedReader headReader = new BufferedReader(new FileReader("./git/HEAD"));
-            String head = headReader.readLine();
-            headReader.close();
+            // BufferedReader headReader = new BufferedReader(new FileReader("./git/HEAD"));
+            // String head = headReader.readLine();
+            // headReader.close();
 
-            BufferedReader treeReader = new BufferedReader(new FileReader("./git/objects/" + head));
+            BufferedReader treeReader = new BufferedReader(new FileReader("./git/objects/" + commit));
             String tree = treeReader.readLine();
             tree = tree.substring(tree.indexOf(' ') + 1);
             treeReader.close();
@@ -339,6 +340,32 @@ public class Git {
             return index.toString();
         } catch (Exception e) {
             return null;
+        }
+    }
+
+    public static void checkout(String commit) {
+        try {
+            BufferedReader indexReader = new BufferedReader(new FileReader("./git/index"));
+            String line;
+            String home = new File("").getAbsoluteFile().getName();
+            while ((line = indexReader.readLine()) != null) {
+                System.out.println(line);
+                File delPath = new File(line.substring(line.lastIndexOf(' ')+1));
+                while (delPath != null && !delPath.getName().equals(home)) {
+                    delPath.delete();
+                    delPath=delPath.getParentFile();
+                }
+            }
+            File com = new File("./git/objects/"+commit);
+            if (!com.exists()) {
+                throw new IOException();
+            }
+            BufferedWriter headWriter = new BufferedWriter(new FileWriter("./git/HEAD"));
+            headWriter.write(commit);
+            headWriter.close();
+            rebuildIndex(commit);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
